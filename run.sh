@@ -22,6 +22,6 @@ end
 client = Slack::Web::Client.new
 client.auth_test
 
-message = IssuesLog::SupportIssues.new(client).get_issues.format.to_text.send_message
+message = IssuesLog::SupportIssues.new(client).get_issues.format.send_message
 
 
