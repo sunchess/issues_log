@@ -1,39 +1,22 @@
 module IssuesLog
-  class SupportIssues
+  class SupportIssues < Base
     include HTTParty
     base_uri 'https://api.github.com/repos/Uscreen-video/issues'
-    debug_output $stdout
+    #debug_output $stdout
 
-    attr_reader :accumulator
-
-    def initialize(slack_client)
-      @labels = ENV['LABELS'] || ['API & Integrations ❄️', 'Marketing ❄️', 'North Team ❄️']
-      @github_token = ENV['GITHUB_TOKEN']
-      @accumulator = []
-      @slack_channel = ENV['CHANNEL']
-      @slack_client = slack_client
-    end
-
-    def get_issues
-      @labels.each do |label|
-        response = issues_by_label(label)
-        @accumulator << JSON.parse(response.body)
-      end
-
-      @accumulator = @accumulator.flatten.uniq
-      self
-    end
-
-    def format
+    def format!
       return if @accumulator.empty?
 
       @accumulator.map! do |issue|
+        pr_link = pull_request_link(issue['number'])
+
         {
           id: issue['number'],
           url: issue['html_url'],
           title: issue['title'],
           date: issue['created_at'],
-          assignee: issue['assignees']&.any? ? issue['assignees'].map { |i| i['login'] }.join(', ') : nil
+          assignee: issue['assignees']&.any? ? issue['assignees'].map { |i| i['login'] }.join(', ') : nil,
+          pr: pr_link
         }
       end
 
@@ -46,38 +29,39 @@ module IssuesLog
       text = "Hey team, some statistics are below 📈 \n\n"
       text << "*Support issues* \n\n"
       text << case count
+              when 0
+                "Perfect! There is no support issues 🎉 \n"
               when 1
-                "Awesome only 1 issue ❤️  \n"
+                "Awesome! Only *1* support issue ❤️ \n"
               when 2...20
-                "Good job team! There are only #{count} issues 💪  \n"
+                "Good job team! There are only *#{count}* support issues 💪 \n"
               when 20..50
-                "Pull devil! There are #{count} issues 🚀  \n "
+                "Pull devil! There are *#{count}* support issues 🚀 \n "
               else
-                "There are #{count} issues. No pains, no gains 🏋️  \n "
+                "There are *#{count}* support issues. No pains, no gains 🏋️  \n "
               end
 
       text << "\n"
       text << @accumulator.map do |i|
-        "#{i[:id]} - <#{i[:url]}|#{i[:title]}> - #{DateTime.parse(i[:date]).strftime('%D')} - *#{i[:assignee] || '`None`'}*"
+        pr_link = i[:pr].nil? ? "*`No linked PR`*" : "<#{i[:pr]}|*PR link*>"
+
+        "[#{i[:id]}] <#{i[:url]}|#{i[:title]}> - #{DateTime.parse(i[:date]).strftime('%D')} - #{pr_link} - *#{i[:assignee] || '`None`'}*  "
       end.join("\n")
 
-      @slack_client.chat_postMessage(channel: @slack_channel , text: text, as_user: true)
+      @slack_client.chat_postMessage(channel: @slack_channel , text: text, as_user: true) if @slack_channel
+
+      text
     end
 
     private
 
-    def issues_by_label(label)
-      options = build_options(label)
-      self.class.get("/issues", options)
+    def pull_request_link(id)
+      pr = pull_requests.find { |i| i['body'].include?("Uscreen-video/issues##{id}")}
+      pr&.dig('pull_request', 'html_url')
     end
 
-    def build_options(label)
-      {
-        query: { labels: label },
-        headers: {
-          'Authorization' => "token #{@github_token}",
-        }
-      }
+    def pull_requests
+      @pull_requests ||= PullRequests.new.get_prs.accumulator
     end
   end
 end
