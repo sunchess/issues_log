@@ -1,8 +1,16 @@
 module IssuesLog
   class SupportIssues < Base
-    include HTTParty
     base_uri 'https://api.github.com/repos/Uscreen-video/issues'
-    #debug_output $stdout
+
+    def get_issues
+      @support_labels.each do |label|
+        response = issues_by_label(label)
+        @accumulator << JSON.parse(response.body)
+      end
+
+      @accumulator = @accumulator.flatten.uniq
+      self
+    end
 
     def format!
       return if @accumulator.empty?
@@ -43,7 +51,7 @@ module IssuesLog
 
       text << "\n"
       text << @accumulator.map do |i|
-        pr_link = i[:pr].nil? ? "*`No linked PR`*" : "<#{i[:pr]}|*PR link*>"
+        pr_link = i[:pr].nil? ? "*`No linked PR`*" : "<#{i[:pr]}|*linked PR*>"
 
         "[#{i[:id]}] <#{i[:url]}|#{i[:title]}> - #{DateTime.parse(i[:date]).strftime('%D')} - #{pr_link} - *#{i[:assignee] || '`None`'}*  "
       end.join("\n")

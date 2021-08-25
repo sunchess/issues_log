@@ -1,8 +1,16 @@
 module IssuesLog
   class Issues < Base
-    include HTTParty
     base_uri 'https://api.github.com/repos/Uscreen-video/uscreen_2'
 
+    def get_issues
+      @labels.each do |label|
+        response = issues_by_label(label)
+        @accumulator << JSON.parse(response.body)
+      end
+
+      @accumulator = @accumulator.flatten.uniq
+      self
+    end
 
     def format!
       return if @accumulator.empty?
@@ -24,7 +32,7 @@ module IssuesLog
       count = @accumulator.count
 
       text = "*Main repo issues* \n\n"
-      text << "There are *#{count}* issues ⚙️ \n\n"
+      text << "There are *#{count}* issues 💡 \n\n"
 
       text << @accumulator.map do |i|
         "[#{i[:id]}] <#{i[:url]}|#{i[:title]}> - #{DateTime.parse(i[:date]).strftime('%D')} - *#{i[:assignee] || '`None`'}*  "
@@ -36,8 +44,5 @@ module IssuesLog
     end
 
     private
-
-    def pulls
-    end
   end
 end

@@ -1,8 +1,6 @@
 module IssuesLog
   class PullRequests < Base
-    include HTTParty
     base_uri 'https://api.github.com/repos/Uscreen-video/uscreen_2'
-    # debug_output $stdout
 
     def get_prs
       @labels.each do |label|
@@ -35,7 +33,7 @@ module IssuesLog
       count = @accumulator.count
 
       text = "*Pull requests* \n\n"
-      text << "There are *#{count}* pull requests 💡 \n\n"
+      text << "There are *#{count}* pull requests ⚙️ \n\n"
 
       text << @accumulator.map do |i|
         "[#{i[:id]}] <#{i[:url]}|#{i[:title]}> - #{DateTime.parse(i[:date]).strftime('%D')} - *#{i[:assignee] || '`None`'}*  "

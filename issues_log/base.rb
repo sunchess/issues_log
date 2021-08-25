@@ -1,5 +1,8 @@
 module IssuesLog
   class Base
+    include HTTParty
+    # debug_output $stdout
+
     attr_reader :accumulator
 
     def initialize(slack_client = nil)
@@ -11,16 +14,6 @@ module IssuesLog
       @slack_client = slack_client
     end
 
-    def get_issues
-      @support_labels.each do |label|
-        response = issues_by_label(label)
-        @accumulator << JSON.parse(response.body)
-      end
-
-      @accumulator = @accumulator.flatten.uniq
-      self
-    end
-
     private
 
     def issues_by_label(label)
@@ -30,7 +23,10 @@ module IssuesLog
 
     def build_options(label)
       {
-        query: { labels: label },
+        query: {
+          labels: label,
+          sort: 'updated'
+        },
         headers: {
           'Authorization' => "token #{@github_token}",
         }
