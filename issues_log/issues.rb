@@ -8,7 +8,7 @@ module IssuesLog
         @accumulator << JSON.parse(response.body)
       end
 
-      @accumulator = @accumulator.flatten.uniq
+      @accumulator = @accumulator.flatten.uniq.select { |i| i['pull_request'].nil? }
       self
     end
 
@@ -30,13 +30,19 @@ module IssuesLog
 
     def send_message
       count = @accumulator.count
+      return if count == 0
 
       text = "*Main repo issues* \n\n"
-      text << "There are *#{count}* issues 💡 \n\n"
 
-      text << @accumulator.map do |i|
-        "[#{i[:id]}] <#{i[:url]}|#{i[:title]}> - #{DateTime.parse(i[:date]).strftime('%D')} - *#{i[:assignee] || '`None`'}*  "
-      end.join("\n")
+      if ENV['ISSUES_SHORT_FORMAT']
+        link = "https://github.com/Uscreen-video/uscreen_2/issues?q=#{CGI::escape("is:issue is:open label:\"#{@labels.first}\"")}"
+        text << "There are <#{link}|*#{count}* issues> 💡 \n\n"
+      else
+        text << "There are *#{count}* issues 💡 \n\n"
+        text << @accumulator.map do |i|
+          "[#{i[:id]}] <#{i[:url]}|#{i[:title]}> - #{DateTime.parse(i[:date]).strftime('%D')} - *#{i[:assignee] || '`None`'}*  "
+        end.join("\n")
+      end
 
       @slack_client.chat_postMessage(channel: @slack_channel , text: text, as_user: true) if @slack_channel
 
