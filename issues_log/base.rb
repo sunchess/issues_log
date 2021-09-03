@@ -6,8 +6,8 @@ module IssuesLog
     attr_reader :accumulator
 
     def initialize(slack_client = nil)
-      @support_labels = ENV['SUPPORT_LABELS']&.split(',')&.map(&:strip) || ['API & Integrations ❄️', 'Marketing ❄️', 'North Team ❄️']
-      @labels = ENV['LABELS']&.split(',')&.map(&:strip) || ['North Team :snowflake:']
+      @support_labels = ENV['SUPPORT_LABELS']&.split(',')&.map(&:strip) || ['API :unicorn:', 'Analytics 🦄', 'Customization 🦄', 'Live Events 🦄', 'Content 👽 🦄']
+      @labels = ENV['LABELS']&.split(',')&.map(&:strip) || ['Viana Team :unicorn:']
       @github_token = ENV['GITHUB_TOKEN']
       @accumulator = []
       @slack_channel = ENV['CHANNEL']

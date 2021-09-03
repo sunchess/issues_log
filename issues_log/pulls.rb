@@ -10,6 +10,15 @@ module IssuesLog
       self
     end
 
+    def reviewers(pull_id)
+      response = self.class.get("/pulls/#{pull_id}", options)
+      body = JSON.parse(response.body)
+      reviewers = body["requested_reviewers"]
+      return [] if reviewers.empty?
+
+      reviewers.map { |r| r['login'] }
+    end
+
     def options
       {
         headers: {

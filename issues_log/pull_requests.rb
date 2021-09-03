@@ -35,8 +35,12 @@ module IssuesLog
       text = "*Pull requests* \n\n"
       text << "There are *#{count}* pull requests ⚙️ \n\n"
 
+      pulls = Pulls.new
+
       text << @accumulator.map do |i|
-        "[#{i[:id]}] <#{i[:url]}|#{i[:title]}> - #{DateTime.parse(i[:date]).strftime('%D')} - *#{i[:assignee] || '`None`'}*  "
+        reviewers = pulls.reviewers(i[:id])
+
+        "[#{i[:id]}] <#{i[:url]}|#{i[:title]}> - #{DateTime.parse(i[:date]).strftime('%D')} - *#{i[:assignee] || '`None`'}* [#{reviewers.any? ? reviewers.join(', ') : '`None`'}] "
       end.join("\n")
 
       @slack_client.chat_postMessage(channel: @slack_channel , text: text, as_user: true) if @slack_channel
